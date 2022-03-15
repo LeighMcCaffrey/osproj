@@ -21,7 +21,20 @@ struct process {
 	int ** burst_times;
 } process;
 
-float next_exp() {
+float next_exp(float lambda, float long_tail) {
+	int iterations = 10000000;
+	double sum = 0;
+	for ( int i = 0 ; i < iterations ; i++ )
+  	{
+		/* generate the next pseudo-random value x */
+		//double lambda = 0.001;  /* average should be 1/lambda ==> 1000 */
+		double r = drand48();   /* uniform dist [0.00,1.00) -- also see random() */
+		double x = -log( r ) / lambda;  /* log() is natural log */
+		/* skip values that are far down the "long tail" of the distribution */
+		if ( x > long_tail ) { i--; continue; }
+		sum += x;
+  }
+  	return sum / iterations;
 	//look up how they used formula in exp-random.c
 	//flowt next = -log(r)/lambda
 	//return next;
@@ -38,13 +51,13 @@ void free_process_set(struct process ** process_set, int n) {
 }
 //make this a class maybe?? I gotta look up format for that
 //NOT GOING TO END UP VOID, im just not sure what itll return so placeholder for now
-struct process * define_process(int id, int seed) {
+struct process * define_process(int id, int seed, float lambda, float long_tail ) {
 	struct process * p = calloc(1, sizeof(process));
 	//Identify initial process arrival time as floor of next random number in sequence given by next_exp
-	p->init_arrival = floor(next_exp());
+	p->init_arrival = floor(next_exp(lambda, long_tail));
 	//Identify # CPU bursts for given process as ceiling of # generated from uniform distribution (use drand48) times 100
 		// (int in range [1,100])
-	p->num_bursts = ceiling(drand48(seed)*100);
+	p->num_bursts = ceiling(drand48()*100);
 	//For each CPu burst, identify CPU burst time and I/O burst time as cieling of next two random numbers given by next_exp
 		//mult I/O by 10
 	//creating an array with dimensions (num_bursts x 2)
@@ -53,8 +66,8 @@ struct process * define_process(int id, int seed) {
 	p->burst_times = calloc(p->num_bursts, sizeof(int *));
 	for (int i = 0; i < p->num_bursts; i ++) {
 		p->burst_times[i] = calloc(2, sizeof(int));
-		p->burst_times[i][0] = ceiling(next_exp());
-		p->burst_times[i][1] = ceiling(next_exp()) * 10;
+		p->burst_times[i][0] = ceiling(next_exp(lambda, long_tail));
+		p->burst_times[i][1] = ceiling(next_exp(lambda, long_tail)) * 10;
 	}
 	return p;
 }
@@ -75,18 +88,20 @@ int main(int argc, char** argv) {
 	int n = atoi(argv[1]); //Number of processes to simulate, assigned A-Z	
 	int seed = atoi(argv[2]); //seed for random numbers, srand48 for each scheduling algo, drand48 to obtain next val in range [0.0,1.0)
 	//TODO: remembet what to use for floats instead of atoi
-	float lambda = atof(argv[3]); //constant in exp distribution for interarrival times (avg val 1/lambda, check out exp-random.c)
+	double lambda = atof(argv[3]); //constant in exp distribution for interarrival times (avg val 1/lambda, check out exp-random.c)
 	int upper = atoi(argv[4]); //upper bound for exp distribution (skip those above the tail like in lab)
 	int t_cs = atoi(argv[5]); //Time in ms it takes for a context switch, expect tcs to be positive even int
-	float alpha = atof(argv[6]); //For SJF and SRT for estimating burst times
+	double alpha = atof(argv[6]); //For SJF and SRT for estimating burst times
 	int t_slice = atoi(argv[7]); //For RR, time slice in ms
 
+	//seed the random number generator:
+	srand48(seed);
 	//Define set of processes
 	//values of specific processes can be accessed like "process_set[i]->init_arrival"
 	//index within process_set will be the same as id
 	struct process ** process_set = calloc(n, sizeof(process));
 	for (int i = 0; i < n; i++) {
-		process_set[i] = define_process(i, seed);
+		process_set[i] = define_process(i, seed, lambda, upper);
 	}
 
 	//re-seed random number generator to ensure same processes and times (how to re-seed?)
