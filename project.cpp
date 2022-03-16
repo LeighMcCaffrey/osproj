@@ -49,6 +49,7 @@ void free_process_set(struct Process ** process_set, int n) {
 		delete process_set[i];
 	}
 	free(process_set);
+	//this is a test
 }
 
 //make this a class maybe?? I gotta look up format for that
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
 	int t_cs = atoi(argv[5]); //Time in ms it takes for a context switch, expect tcs to be positive even int
 	double alpha = atof(argv[6]); //For SJF and SRT for estimating burst times
 	int t_slice = atoi(argv[7]); //For RR, time slice in ms
-
+   
 	//seed the random number generator:
 	srand48(seed);
 	//Define set of processes
