@@ -11,29 +11,20 @@
 #include <tuple>
 #include <stdexcept>
 #include <iostream>
+#include "schedules.h"
 
 
-struct Process {
-	int id;
-	int init_arrival;
-	int num_bursts;
-	std::vector<std::tuple<int, int>> burst_times;
-};
 
 float next_exp(float lambda, float long_tail) {
 	int iterations = 10000000;
 	double sum = 0;
-	for ( int i = 0 ; i < iterations ; i++ )
-  	{
-		/* generate the next pseudo-random value x */
-		//double lambda = 0.001;  /* average should be 1/lambda ==> 1000 */
+	double r = drand48();   /* uniform dist [0.00,1.00) -- also see random() */
+	double x = -log( r ) / lambda;  /* log() is natural log */
+	while (x > long_tail){
 		double r = drand48();   /* uniform dist [0.00,1.00) -- also see random() */
 		double x = -log( r ) / lambda;  /* log() is natural log */
-		/* skip values that are far down the "long tail" of the distribution */
-		if ( x > long_tail ) { i--; continue; }
-		sum += x;
-  }
-  	return sum / iterations;
+	}
+	return x;
 	//look up how they used formula in exp-random.c
 	//flowt next = -log(r)/lambda
 	//return next;
@@ -70,7 +61,10 @@ struct Process * define_process(int id, int seed, float lambda, float long_tail 
 	for (int i = 0; i < p->num_bursts; i ++) {
 		int CPU_time = ceil(next_exp(lambda, long_tail));
 		int IO_time = ceil(next_exp(lambda, long_tail)) * 10;
-        p->burst_times[i] =  std::make_tuple(CPU_time, IO_time);
+		std::vector<int> times;
+		times.push_back(CPU_time);
+		times.push_back(IO_time);
+        p->burst_times[i] = times;
 	}
 	return p;
 }
@@ -124,8 +118,5 @@ int main(int argc, char** argv) {
 			-wait time
 			(all averaged together for each algorithm)
 	*/
-
-
-
 	return EXIT_SUCCESS;
 }
