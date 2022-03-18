@@ -11,9 +11,14 @@
 #include <tuple>
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 #include "schedules.h"
-
-
+//when n == 0, returns 'A'; when n == 1, returns "B'"...
+char int_to_char (int n) {
+	int tmp = n + 65;
+	char a = tmp;
+	return a;
+}
 
 float next_exp(float lambda, float long_tail) {
 	int iterations = 10000000;
@@ -47,6 +52,7 @@ void free_process_set(struct Process ** process_set, int n) {
 //NOT GOING TO END UP VOID, im just not sure what itll return so placeholder for now
 struct Process * define_process(int id, int seed, float lambda, float long_tail ) {
 	struct Process * p = new Process;
+	p->id = int_to_char(id);
 	//Identify initial process arrival time as floor of next random number in sequence given by next_exp
 	p->init_arrival = floor(next_exp(lambda, long_tail));
 	//Identify # CPU bursts for given process as ceiling of # generated from uniform distribution (use drand48) times 100
@@ -63,12 +69,22 @@ struct Process * define_process(int id, int seed, float lambda, float long_tail 
 		int IO_time = ceil(next_exp(lambda, long_tail)) * 10;
 		std::vector<int> times;
 		times.push_back(CPU_time);
-		times.push_back(IO_time);
+		if (i == p->num_bursts -1) {
+			times.push_back(-1);
+		}
+		else {
+			times.push_back(IO_time);
+			}
         p->burst_times[i] = times;
 	}
 	return p;
 }
 
+// Compares two processes according to 
+bool compareArrivalTime(Process * p1, Process * p2)
+{
+    return (p1->init_arrival < p2->init_arrival);
+}
 int main(int argc, char** argv) {
 	//Get input parameters
 	if (argc != 8) {
@@ -93,6 +109,8 @@ int main(int argc, char** argv) {
 	for (int i = 0; i < n; i++) {
 		process_set[i] = define_process(i, seed, lambda, upper);
 	}
+	//sort the processes so that they are ordered by earliest arrival time
+	std::sort(process_set.begin(), process_set.end(), compareArrivalTime);
 
 	//re-seed random number generator to ensure same processes and times (how to re-seed?)
 
