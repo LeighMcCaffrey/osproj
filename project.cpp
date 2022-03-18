@@ -21,7 +21,6 @@ char int_to_char (int n) {
 }
 
 float next_exp(float lambda, float long_tail) {
-	int iterations = 10000000;
 	double sum = 0;
 	double r = drand48();   /* uniform dist [0.00,1.00) -- also see random() */
 	double x = -log( r ) / lambda;  /* log() is natural log */

@@ -21,6 +21,8 @@ struct Process {
 	int num_bursts;
 	//std::vector<std::tuple<int, int>> burst_times;
 	std::vector<std::vector<int> > burst_times;
+	//burst index keeps track of what burst we're on within a process
+	int burst_index;
 	double tau;
 	int CPU_burst_t_left;
 	int IO_burst_t_left;
