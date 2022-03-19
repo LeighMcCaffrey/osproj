@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
 	std::sort(process_set.begin(), process_set.end(), compareArrivalTime);
 
 	//create a file to print statistics
-	ofstream simout;
+	std::ofstream simout;
 	simout.open("simout.txt");
 
 	//re-seed random number generator to ensure same processes and times (how to re-seed?)

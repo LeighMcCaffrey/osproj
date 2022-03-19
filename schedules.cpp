@@ -16,9 +16,10 @@
 #include <fstream>
 #include <assert.h>
 #include <iomanip>
+#include <algorithm>
 
 //for breaking ties with ID order
-bool ID_sort(Process * p1, Process * p2) {return p1.id<p2.id;}
+bool ID_sort(Process * p1, Process * p2) {return p1->id<p2->id;}
 
 //template for comparing processes
 struct CompareBurstTimes {
@@ -134,7 +135,7 @@ std::vector<Process*> new_process_arrivals( std::priority_queue<Process *, std::
 }
 
 Algo_Info * FCFS(const std::vector<Process* > process_set, int t_cs) {
-    std::queue<Process *, std::vector<Process *>> ready_queue
+    std::queue<Process *, std::vector<Process *>> ready_queue;
 }
 
 //turnaround time = 
@@ -203,17 +204,22 @@ Algo_Info * SJF(std::vector<Process* > process_set, int t_cs, double alpha ) {
 }
 
 Algo_Info * SRT(const std::vector<Process* > process_set, int t_cs, double alpha) {
+    std::vector<Process* > processes(process_set);
     std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> ready_queue;
+    std::priority_queue<Process *, std::vector<Process *>, CompareIOTimeLeft> waiting_state;
     std::cout << "time 0ms: Simulator started for SRT [Q empty]" << std::endl;
     Process* CPU_process_now = nullptr;
     Process* CPU_process_in = nullptr;
     Process* CPU_process_out = nullptr;
-    for (t=0; true; t++) {
+    int cs_left = 0 ; // start at 0 so that a new process does its CPU burst
+    int n = process_set.size();
+    int num_processes_completed = 0;
+    for (int t=0; true; t++) {
         //check if this is the last process completed
         if (waiting_state.empty() && ready_queue.empty() && processes.empty()
             && CPU_process_in == nullptr && CPU_process_out == nullptr && CPU_process_now == nullptr) {
             assert(num_processes_completed == n); 
-            std::cout << "time" << t << "ms: Simulator ended for SRT [Q empty]" << std::endl;
+            std::cout << "time " << t << "ms: Simulator ended for SRT [Q empty]" << std::endl;
             //Print statistics to a file
             //TODO: practice fixed and set precision to make sure this formats correctly
             //TODO: keep track of these values in algo
@@ -236,12 +242,13 @@ Algo_Info * SRT(const std::vector<Process* > process_set, int t_cs, double alpha
         IO_burst_completion(ready_queue, waiting_state);
 
         // (c) new process arrivals
-        std::vector<Process*> new_arrivals = new_process_arrivals( ready_queue, process_set, t)
+        std::vector<Process*> new_arrivals = new_process_arrivals( ready_queue, process_set, t);
         std::sort(new_arrivals.begin(), new_arrivals.end(),ID_sort);
         //Print all new arrivals, each time printing the complete ready queue
         for (int i = 0; i < new_arrivals.size(); i++) {
-            std::cout << "time " << t << "ms: Proccess " << new_arrivals[i]; <<" (tau " << alpha <<"ms)  arrived; added to ready queue [Q";
-            for(std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> tmp = ready_queue; !tmp.empty(); char p = tmp.pop()) {
+            std::cout << "time " << t << "ms: Proccess " << new_arrivals[i] <<" (tau " << alpha << "ms)  arrived; added to ready queue [Q";
+            for(std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> tmp = ready_queue; !tmp.empty(); tmp.pop()) {
+                char p = tmp.top()->id;
                 std::cout << " " << p;
             }
             std::cout << "]" << std::endl;
@@ -265,5 +272,5 @@ Algo_Info * SRT(const std::vector<Process* > process_set, int t_cs, double alpha
 }
 
 Algo_Info * RR(const std::vector<Process* > process_set, int t_cs, int t_slice) {
-    std::queue<Process *, std::vector<Process *>> ready_queue
+    std::queue<Process *, std::vector<Process *>> ready_queue;
 }
