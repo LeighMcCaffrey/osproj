@@ -13,7 +13,12 @@
 #include <tuple>
 #include <stdexcept>
 #include <iostream>
+#include <fstream>
 #include <assert.h>
+#include <iomanip>
+
+//for breaking ties with ID order
+bool ID_sort(Process * p1, Process * p2) {return p1.id<p2.id;}
 
 //template for comparing processes
 struct CompareBurstTimes {
@@ -49,9 +54,10 @@ void update_tau(Process * p, double alpha) {
 void CPU_burst_completion(std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> ready_queue,
                         std::priority_queue<Process *, std::vector<Process *>, CompareIOTimeLeft> waiting_state, 
                         Process ** CPU_process_now, Process ** CPU_process_in, Process ** CPU_process_out, int * cs_left, int * num_processes_completed, double alpha, int t_cs) {
-            if (*CPU_process_now) { //*CPU is currently being used by a process
+        if (*CPU_process_now) { //*CPU is currently being used by a process
             assert(!*CPU_process_out && !*CPU_process_in);
-            if ((*CPU_process_now)->IO_burst_t_left == 0) { //*CPU_process_now has completed its burst
+
+            if ((*CPU_process_now)->CPU_burst_t_left == 0) { //*CPU_process_now has completed its burst
                 //switch *CPU process out
                 *CPU_process_out = *CPU_process_now;
                 *CPU_process_now = nullptr;
@@ -71,7 +77,7 @@ void CPU_burst_completion(std::priority_queue<Process *, std::vector<Process *>,
                     (*CPU_process_now)->CPU_burst_t_left = (*CPU_process_now)->burst_times[burst_index][0];
                     *CPU_process_in = nullptr;
                 }
-                 if (*CPU_process_out) { //introduce new process into *CPU burst
+                if (*CPU_process_out) { //introduce new process into *CPU burst
                     assert(!*CPU_process_in && !*CPU_process_now);
                     //update IO waiting time for that procss and move *CPU_process_out to waiting queue
                     int burst_index = (*CPU_process_out)->burst_index;
@@ -113,17 +119,24 @@ void IO_burst_completion(std::priority_queue<Process *, std::vector<Process *>, 
         }
     }
 }
-void new_process_arrivals( std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> ready_queue,
+std::vector<Process*> new_process_arrivals( std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> ready_queue,
                         std::vector<Process* > processes, int t) {
+    std::vector<Process*> new_arrivals;
     //processes is ordered by arrival time, so once we hit a process with time over current time, we can break loop
     for (int i = 0; i < processes.size(); i++) {
         //add process to ready queue if init time == t
         Process * p = processes[i];
         if (p->init_arrival == t) {
             ready_queue.push(p);
+            new_arrivals.push_back(p);
         }
     }
 }
+
+Algo_Info * FCFS(const std::vector<Process* > process_set, int t_cs) {
+    std::queue<Process *, std::vector<Process *>> ready_queue
+}
+
 //turnaround time = 
 Algo_Info * SJF(std::vector<Process* > process_set, int t_cs, double alpha ) {
     double t;
@@ -187,5 +200,70 @@ Algo_Info * SJF(std::vector<Process* > process_set, int t_cs, double alpha ) {
         }
     }
 
-   
+}
+
+Algo_Info * SRT(const std::vector<Process* > process_set, int t_cs, double alpha) {
+    std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> ready_queue;
+    std::cout << "time 0ms: Simulator started for SRT [Q empty]" << std::endl;
+    Process* CPU_process_now = nullptr;
+    Process* CPU_process_in = nullptr;
+    Process* CPU_process_out = nullptr;
+    for (t=0; true; t++) {
+        //check if this is the last process completed
+        if (waiting_state.empty() && ready_queue.empty() && processes.empty()
+            && CPU_process_in == nullptr && CPU_process_out == nullptr && CPU_process_now == nullptr) {
+            assert(num_processes_completed == n); 
+            std::cout << "time" << t << "ms: Simulator ended for SRT [Q empty]" << std::endl;
+            //Print statistics to a file
+            //TODO: practice fixed and set precision to make sure this formats correctly
+            //TODO: keep track of these values in algo
+            /*
+            simout << "Algorithm SRT" << std::endl;
+            simout << "average CPU burst time: " << std::fixed << std::setprecision(3) << avg_burst << "ms" << std::endl;
+            simout << "average wait time: " << std::fixed << std::setprecision(3) << avg_wait << "ms" << std::endl;
+            simout << "average turnaround time: " << std::fixed << std::setprecision(3) << avg_turn << "ms" << std::endl;
+            simout << "total number of context switches: " << tot_switch << std::endl;
+            simout << "total number of preemptions: " << tot_preemp << std::endl;
+            simout << "CPU utilization " << std::fixed << std::setprecision(3) << CPU_util << std::endl;
+            */
+
+            break;
+        }
+        // (a) CPU burst completion
+        CPU_burst_completion(ready_queue, waiting_state, &CPU_process_now, &CPU_process_in, &CPU_process_out, &cs_left, &num_processes_completed, alpha, t_cs);
+
+        // (b) I/O burst comletion
+        IO_burst_completion(ready_queue, waiting_state);
+
+        // (c) new process arrivals
+        std::vector<Process*> new_arrivals = new_process_arrivals( ready_queue, process_set, t)
+        std::sort(new_arrivals.begin(), new_arrivals.end(),ID_sort);
+        //Print all new arrivals, each time printing the complete ready queue
+        for (int i = 0; i < new_arrivals.size(); i++) {
+            std::cout << "time " << t << "ms: Proccess " << new_arrivals[i]; <<" (tau " << alpha <<"ms)  arrived; added to ready queue [Q";
+            for(std::priority_queue<Process *, std::vector<Process *>, CompareBurstTimes> tmp = ready_queue; !tmp.empty(); char p = tmp.pop()) {
+                std::cout << " " << p;
+            }
+            std::cout << "]" << std::endl;
+        }
+        //iterate over waiting_state and decrement all processes' IO_burst_t_left
+        std::priority_queue<Process *, std::vector<Process *>, CompareIOTimeLeft> tmp = waiting_state;
+        while (!tmp.empty()) {
+            Process * p = tmp.top();
+            p->IO_burst_t_left -= 1;
+            tmp.pop();
+        }
+        if (CPU_process_now) {
+            CPU_process_now->CPU_burst_t_left -=1;
+        }
+        else {
+            assert(CPU_process_in || CPU_process_out);
+            cs_left -= 1;
+        }
+    }
+
+}
+
+Algo_Info * RR(const std::vector<Process* > process_set, int t_cs, int t_slice) {
+    std::queue<Process *, std::vector<Process *>> ready_queue
 }

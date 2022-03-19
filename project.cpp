@@ -11,6 +11,7 @@
 #include <tuple>
 #include <stdexcept>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include "schedules.h"
 //when n == 0, returns 'A'; when n == 1, returns "B'"...
@@ -92,7 +93,6 @@ int main(int argc, char** argv) {
 	}
 	int n = atoi(argv[1]); //Number of processes to simulate, assigned A-Z	
 	int seed = atoi(argv[2]); //seed for random numbers, srand48 for each scheduling algo, drand48 to obtain next val in range [0.0,1.0)
-	//TODO: remembet what to use for floats instead of atoi
 	double lambda = atof(argv[3]); //constant in exp distribution for interarrival times (avg val 1/lambda, check out exp-random.c)
 	int upper = atoi(argv[4]); //upper bound for exp distribution (skip those above the tail like in lab)
 	int t_cs = atoi(argv[5]); //Time in ms it takes for a context switch, expect tcs to be positive even int
@@ -110,6 +110,10 @@ int main(int argc, char** argv) {
 	}
 	//sort the processes so that they are ordered by earliest arrival time
 	std::sort(process_set.begin(), process_set.end(), compareArrivalTime);
+
+	//create a file to print statistics
+	ofstream simout;
+	simout.open("simout.txt");
 
 	//re-seed random number generator to ensure same processes and times (how to re-seed?)
 
@@ -135,5 +139,7 @@ int main(int argc, char** argv) {
 			-wait time
 			(all averaged together for each algorithm)
 	*/
+	simout.close();
+
 	return EXIT_SUCCESS;
 }
