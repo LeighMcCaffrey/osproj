@@ -14,34 +14,36 @@
 #include <algorithm>
 #include "schedules.h"
 //when n == 0, returns 'A'; when n == 1, returns "B'"...
-char int_to_char (int n) {
+char int_to_char (int n) 
+{
 	int tmp = n + 65;
 	char a = tmp;
 	return a;
 }
 
-float next_exp(float lambda, float long_tail) {
-	int iterations = 10000000;
-	double sum = 0;
-	double r = drand48();   /* uniform dist [0.00,1.00) -- also see random() */
-	double x = -log( r ) / lambda;  /* log() is natural log */
-	while (x > long_tail){
-		double r = drand48();   /* uniform dist [0.00,1.00) -- also see random() */
-		double x = -log( r ) / lambda;  /* log() is natural log */
+float next_exp(float lambda, float long_tail) 
+{
+	double r = drand48();   // uniform dist [0.00,1.00) -- also see random() 
+	double x = -log( r ) / lambda;  // log() is natural log 
+	while (x > long_tail)
+	{
+		double r = drand48();   // uniform dist [0.00,1.00) -- also see random() 
+		double x = -log( r ) / lambda;  // log() is natural log 
 	}
 	return x;
-	//look up how they used formula in exp-random.c
-	//flowt next = -log(r)/lambda
-	//return next;
 }
-void free_2D_array(int ** array, int length) {
-	for (int i = 0; i < length; i ++) {
+void free_2D_array(int ** array, int length) 
+{
+	for (int i = 0; i < length; i ++) 
+	{
 		free(array[i]);
 	}
 	free(array);
 }
-void free_process_set(struct Process ** process_set, int n) {
-	for (int i = 0; i < n; i ++) {
+void free_process_set(struct Process ** process_set, int n) 
+{
+	for (int i = 0; i < n; i ++) 
+	{
 		delete process_set[i];
 	}
 	free(process_set);
@@ -50,7 +52,8 @@ void free_process_set(struct Process ** process_set, int n) {
 
 //make this a class maybe?? I gotta look up format for that
 //NOT GOING TO END UP VOID, im just not sure what itll return so placeholder for now
-struct Process * define_process(int id, int seed, float lambda, float long_tail ) {
+struct Process * define_process(int id, int seed, float lambda, float long_tail ) 
+{
 	struct Process * p = new Process;
 	p->id = int_to_char(id);
 	//Identify initial process arrival time as floor of next random number in sequence given by next_exp
@@ -64,19 +67,23 @@ struct Process * define_process(int id, int seed, float lambda, float long_tail 
 	// burst_times[i][0] --> CPU_time
 	// burst_times[i][1] --> IO_time
 	p->burst_times.reserve(p->num_bursts);
-	for (int i = 0; i < p->num_bursts; i ++) {
+	for (int i = 0; i < p->num_bursts; i ++) 
+	{
 		int CPU_time = ceil(next_exp(lambda, long_tail));
-		int IO_time = ceil(next_exp(lambda, long_tail)) * 10;
 		std::vector<int> times;
 		times.push_back(CPU_time);
-		if (i == p->num_bursts -1) {
+		if (i == p->num_bursts -1) 
+		{
 			times.push_back(-1);
 		}
-		else {
+		else 
+		{
+			int IO_time = ceil(next_exp(lambda, long_tail)) * 10;
 			times.push_back(IO_time);
-			}
+		}
         p->burst_times[i] = times;
 	}
+
 	return p;
 }
 
@@ -85,9 +92,11 @@ bool compareArrivalTime(Process * p1, Process * p2)
 {
     return (p1->init_arrival < p2->init_arrival);
 }
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
 	//Get input parameters
-	if (argc != 8) {
+	if (argc != 8) 
+	{
 		std::cerr << "ERROR: incorrect number of input arguments\n";
 		return EXIT_FAILURE;
 	}
@@ -106,12 +115,21 @@ int main(int argc, char** argv) {
 	//values of specific processes can be accessed like "process_set[i]->init_arrival"
 	//index within process_set will be the same as id
 	std::vector<Process* >process_set(n);
-	for (int i = 0; i < n; i++) {
+	for (int i = 0; i < n; i++) 
+	{
 		process_set[i] = define_process(i, seed, lambda, upper);
+		std::cout << "Process " << process_set[i]->id << " (arrival time " 
+		<< process_set[i]->init_arrival << " ms) " << process_set[i]->num_bursts << " CPU bursts (tau " 
+		<< 1/lambda << "ms)\n";
+		for (int j = 0; j < process_set[i]->num_bursts; j ++) 
+		{
+			if(process_set[i]->burst_times[j][1]>=0) std::cout << "--> CPU burst "<< process_set[i]->burst_times[j][0] << " ms --> I/O burst " << process_set[i]->burst_times[j][1] << " ms\n";
+			else std::cout << "--> CPU burst "<< process_set[i]->burst_times[j][0] << " ms\n";
+		}
 	}
 	//sort the processes so that they are ordered by earliest arrival time
 	std::sort(process_set.begin(), process_set.end(), compareArrivalTime);
-
+	FCFS(process_set, t_cs);
 	//re-seed random number generator to ensure same processes and times (how to re-seed?)
 
 

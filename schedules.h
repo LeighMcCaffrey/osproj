@@ -15,18 +15,22 @@
 #ifndef SCHEDULES_H // include guard
 #define SCHEDULES_H
 
-struct Process {
+struct Process 
+{
 	char id;
 	int init_arrival;
 	int num_bursts;
 	//std::vector<std::tuple<int, int>> burst_times;
 	std::vector<std::vector<int> > burst_times;
+	//burst index keeps track of what burst we're on within a process
+	int burst_index;
 	double tau;
 	int CPU_burst_t_left;
 	int IO_burst_t_left;
 
 };
-struct Algo_Info {
+struct Algo_Info 
+{
 	double avg_CPU_bt;
 	double avg_wait_time;
 	double avg_turnaround_time;
